@@ -35,7 +35,7 @@ async function sendOTP(email) {
 
         await transporter.sendMail(emailOptions)
 
-        redisClient.setEx(`email:${email}`,300,otp)
+        redisClient.setEx(`email:${email}`, 300, otp)
 
         return { messag: "otp sent successfully !", status: true }
 
@@ -44,8 +44,18 @@ async function sendOTP(email) {
     }
 }
 
-function verifyOtp(email,otp){
-    
+async function verifyOtp(email, otp) {
+    try {
+        let storedOtp = await redisClient.get(`email:${otp}`)
+        if (!storedOtp) throw ("otp is expried/not found !")
+
+        if (storedOtp != otp) throw ("invalid otp !")
+
+        console.log('otp matched successfully !')
+
+    } catch (err) {
+        console.log("error while verifying the otp : ", err)
+    }
 }
 
 let test = (req, res) => {
@@ -85,4 +95,18 @@ let handleUserRegister = async (req, res) => {
     }
 }
 
-export { test, handleUserRegister }
+const handleOTPVerification = (req, res) => {
+
+}
+
+export { test, handleUserRegister, handleOTPVerification }
+
+// data valid
+// (send otp)
+// save user !
+// // verify the email 
+
+// take user email
+// send and verify otp
+
+// create a route to register rest of the user data
