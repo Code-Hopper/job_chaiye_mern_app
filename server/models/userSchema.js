@@ -1,4 +1,3 @@
-import { verify } from "jsonwebtoken";
 import mongoose from "mongoose";
 import bcrypt from "bcrypt"
 
@@ -38,8 +37,8 @@ let userShcema = mongoose.Schema({
         require: true
     },
     qualifications: {
-        type: Array,
-        default: []
+        type: String,
+        default: ""
     },
     documents: {
         type: Array,
@@ -57,6 +56,7 @@ let userShcema = mongoose.Schema({
 
 userShcema.pre("save", async function () {
     try {
+        console.log("user password is :", this.password)
         this.password = await bcrypt.hash(this.password, 10)
         console.log("password hased and saved !")
     } catch (err) {

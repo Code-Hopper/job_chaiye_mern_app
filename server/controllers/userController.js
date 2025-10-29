@@ -1,5 +1,7 @@
 import nodemailer from "nodemailer"
 import dotenv from "dotenv"
+import { redisClient } from "../utils/redisClient.js"
+import { userModel } from "../models/userSchema.js"
 
 dotenv.config({ path: "./config.env" })
 
@@ -15,26 +17,67 @@ const transporter = nodemailer.createTransport({
     }
 });
 
+function genrateRandomNumber() {
+    return Math.floor((Math.random() * 9000) + 1000)
+}
+
+async function sendOTP(email) {
+    try {
+
+        let otp = genrateRandomNumber()
+
+        let emailOptions = {
+            from: process.env.USER_EMAIL,
+            to: email,
+            subject: "your otp to verify email address | valid for 5 mins !",
+            text: `your otp is ${otp} !`,
+        }
+
+        await transporter.sendMail(emailOptions)
+
+        redisClient.setEx(`email:${email}`,300,otp)
+
+        return { messag: "otp sent successfully !", status: true }
+
+    } catch (err) {
+        console.log("error sending otp : ", err)
+    }
+}
+
+function verifyOtp(email,otp){
+    
+}
+
 let test = (req, res) => {
     res.status(200).json({ message: "welcome to user test route !" })
 }
 
-let handleUserRegister = (req, res) => {
+let handleUserRegister = async (req, res) => {
     try {
-        let { name, phone, email, address, dob, qualifications } = req.body
+        let { name, phone, email, address, dob, qualifications, password } = req.body
 
-        if (!name || !phone || !email || !address || !dob || !qualifications) throw ("invalid/missing data !")
+        if (!name || !phone || !email || !address || !dob || !qualifications || !password) throw ("invalid/missing data !")
 
         // check if user exits
-            // if found then error
+        let checkIfUserExits = await userModel.findOne({ $or: [{ "email": email }, { "phone": phone }] })
+
+        // if found then error
+
+        if (checkIfUserExits) throw ("uanble to register user please change email/phone and try again !")
+
+        // to send otp
+
+        let result = await sendOTP(email)
+
+        if (!result.status) throw (`unable to send otp at ${email}`)
 
         // create user object
 
-        // encrypt password
+        let newUser = new userModel({ name, phone, email, address, dob, qualifications, password })
 
-        // save user object
+        await newUser.save();
 
-        // exit
+        res.status(202).json({ message: `user registered successfully please verify the email using otp that is sent on email ${email}` })
 
     } catch (err) {
         console.log("error while registering user : ", err)
