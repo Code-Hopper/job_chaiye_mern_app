@@ -18,7 +18,7 @@ const transporter = nodemailer.createTransport({
 });
 
 function genrateRandomNumber() {
-    return Math.floor((Math.random() * 9000) + 1000)
+    return Math.floor((Math.random() * 9000) + 1000).toString()
 }
 
 async function sendOTP(email) {
@@ -41,20 +41,7 @@ async function sendOTP(email) {
 
     } catch (err) {
         console.log("error sending otp : ", err)
-    }
-}
-
-async function verifyOtp(email, otp) {
-    try {
-        let storedOtp = await redisClient.get(`email:${otp}`)
-        if (!storedOtp) throw ("otp is expried/not found !")
-
-        if (storedOtp != otp) throw ("invalid otp !")
-
-        console.log('otp matched successfully !')
-
-    } catch (err) {
-        console.log("error while verifying the otp : ", err)
+        return { message: "unable to send otp !", status: false }
     }
 }
 
@@ -69,21 +56,22 @@ let handleUserRegister = async (req, res) => {
         if (!name || !phone || !email || !address || !dob || !qualifications || !password) throw ("invalid/missing data !")
 
         // check if user exits
-        let checkIfUserExits = await userModel.findOne({ $or: [{ "email": email }, { "phone": phone }] })
+        let checkIfUserExits = await userModel.findOne({ $or: [{ "email.userEmail": email }, { "phone": phone }] })
 
         // if found then error
-
         if (checkIfUserExits) throw ("uanble to register user please change email/phone and try again !")
 
-        // to send otp
+        let emailObejct = {
+            userEmail: email, verified: false
+        }
 
+        // to send otp
         let result = await sendOTP(email)
 
-        if (!result.status) throw (`unable to send otp at ${email}`)
+        if (!result.status) throw (`unable to send otp at ${email} | ${result.message}`)
 
         // create user object
-
-        let newUser = new userModel({ name, phone, email, address, dob, qualifications, password })
+        let newUser = new userModel({ name, phone, email: emailObejct, address, dob, qualifications, password })
 
         await newUser.save();
 
@@ -95,18 +83,38 @@ let handleUserRegister = async (req, res) => {
     }
 }
 
-const handleOTPVerification = (req, res) => {
+const handleOTPVerification = async (req, res) => {
+    try {
 
+        let { email, userOtp } = req.body;
+
+        // check if email exits
+        let emailExits = await userModel.findOne({ "email.userEmail": email })
+
+        if (!emailExits) throw (`email ${email} is not registred !`)
+
+        let storedOtp = await redisClient.get(`email:${email}`)
+
+        if (!storedOtp) throw ("otp is expried/not found !")
+
+        if (storedOtp != userOtp) throw ("invalid otp !")
+
+        console.log('otp matched successfully !')
+
+        // change verification status to true
+        let updateUserObject = await userModel.updateOne({ "email.userEmail": email }, { $set: { "email.verified": true } })
+
+        console.log(updateUserObject)
+
+        // remove the temp otp
+        redisClient.del(`email:${email}`)
+
+        res.status(202).json({ message: "otp verified successfully please head to login !" })
+
+    } catch (err) {
+        console.log("error while verifying the otp : ", err)
+        res.status(500).json({ message: "failed to verify user otp please try again later !", err })
+    }
 }
 
 export { test, handleUserRegister, handleOTPVerification }
-
-// data valid
-// (send otp)
-// save user !
-// // verify the email 
-
-// take user email
-// send and verify otp
-
-// create a route to register rest of the user data

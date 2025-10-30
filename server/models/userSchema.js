@@ -6,7 +6,7 @@ let addressObject = {
 }
 
 let emailObject = {
-    email: "", verify: false
+    userEmail: "", verified: false
 }
 
 let userShcema = mongoose.Schema({
