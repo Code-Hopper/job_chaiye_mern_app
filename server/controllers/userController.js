@@ -2,6 +2,8 @@ import nodemailer from "nodemailer"
 import dotenv from "dotenv"
 import { redisClient } from "../utils/redisClient.js"
 import { userModel } from "../models/userSchema.js"
+import jwt from "jsonwebtoken"
+import bcrypt from "bcrypt"
 
 dotenv.config({ path: "./config.env" })
 
@@ -36,6 +38,31 @@ async function sendOTP(email) {
         await transporter.sendMail(emailOptions)
 
         redisClient.setEx(`email:${email}`, 300, otp)
+
+        return { messag: "otp sent successfully !", status: true }
+
+    } catch (err) {
+        console.log("error sending otp : ", err)
+        return { message: "unable to send otp !", status: false }
+    }
+}
+
+
+async function sendOTPForPasswordReset(email) {
+    try {
+
+        let otp = genrateRandomNumber()
+
+        let emailOptions = {
+            from: process.env.USER_EMAIL,
+            to: email,
+            subject: "Password Reset Request !",
+            text: `your otp is ${otp} valid for 5 mins please use this otp to reset your password !`,
+        }
+
+        await transporter.sendMail(emailOptions)
+
+        redisClient.setEx(`emailPasswordReset:${email}`, 300, otp)
 
         return { messag: "otp sent successfully !", status: true }
 
@@ -117,4 +144,106 @@ const handleOTPVerification = async (req, res) => {
     }
 }
 
-export { test, handleUserRegister, handleOTPVerification }
+
+const handleUserLogin = async (req, res) => {
+    try {
+
+        let { email, password } = req.body
+
+        let userExists = await userModel.findOne({ "email.userEmail": email })
+
+        if (!userExists) throw ("unable to find the email please register the user first !")
+
+        if (!userExists.email.verified) {
+
+            // to send otp
+            let result = await sendOTP(email)
+
+            if (!result.status) throw (`unable to send otp at ${email} | ${result.message}`)
+
+            // redirect user to email verification route
+
+            throw (`user email is not verfied we have sent an otp at ${email} !`)
+        }
+
+        // compare password
+
+        let result = await bcrypt.compare(password, userExists.password)
+
+        if (!result) throw ("invalid email/password !")
+
+        // create jwt and send to user 
+
+        let token = await jwt.sign({ email }, process.env.JWT_SECRET_KEY, { expiresIn: "24hr" })
+
+        res.status(202).json({ message: `welcome user ${userExists.name} ! login was successfull.`, token })
+
+    } catch (err) {
+        console.log("error while login : ", err)
+        res.status(400).json({ message: "unable to login", err })
+    }
+}
+
+const handleResetPasswordRequest = async (req, res) => {
+    try {
+
+        let { email } = req.body;
+
+        if (!email) throw ("invalid/incomplete data !")
+
+        let userExists = await userModel.findOne({ "email.userEmail": email })
+
+        if (!userExists) throw ("invalid email address/Please register first !")
+
+        let result = await sendOTPForPasswordReset(email)
+
+        if (!result.status) throw (`unable to send otp at ${email} | ${result.message}`)
+
+        res.status(201).json({ messag: `an otp sent to your email ${email} | valid for 5 mins to reset your password !` })
+
+    } catch (err) {
+        console.log("password reset request failed !", err)
+        res.status(400).json({ messag: "password reset request failed !", err })
+    }
+}
+
+
+const handleOTPForPasswordReset = async (req, res) => {
+    try {
+
+        let { email, userOtp, newPassword } = req.body;
+
+        // check if email exits
+        let emailExits = await userModel.findOne({ "email.userEmail": email })
+
+        if (!emailExits) throw (`email ${email} is not registred !`)
+
+        let storedOtp = await redisClient.get(`emailPasswordReset:${email}`)
+
+        if (!storedOtp) throw ("otp is expried/not found !")
+
+        if (storedOtp != userOtp) throw ("invalid otp !")
+
+        console.log('otp matched successfully for password reset !')
+
+        // encrypt
+
+        let hash = await bcrypt.hash(newPassword, 10)
+
+        // change verification status to true
+        let updateUserObject = await userModel.updateOne({ "email.userEmail": email }, { $set: { "password": hash } })
+
+        console.log(updateUserObject)
+
+        // remove the temp otp
+        redisClient.del(`emailPasswordReset:${email}`)
+
+        res.status(202).json({ message: "otp verified successfully and password has been changed please head to login !" })
+
+    } catch (err) {
+        console.log("error while verifying the otp : ", err)
+        res.status(500).json({ message: "failed to verify user otp please try again later !", err })
+    }
+}
+
+export { test, handleUserRegister, handleOTPVerification, handleUserLogin, handleResetPasswordRequest,handleOTPForPasswordReset }
