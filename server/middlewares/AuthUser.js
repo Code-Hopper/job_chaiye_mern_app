@@ -1,12 +1,13 @@
 import jwt from "jsonwebtoken"
 import dotenv from "dotenv"
+import { userModel } from "../models/userSchema.js"
 
 dotenv.config({ path: "./config.env" })
 
 const AuthUser = async (req, res, next) => {
     try {
 
-        let userToken = req.headers.Authorization
+        let userToken = req.headers.authorization
 
         if (!userToken) throw ("token not found/invalid token !")
 
