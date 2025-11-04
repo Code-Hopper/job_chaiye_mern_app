@@ -6,7 +6,7 @@ const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         const fileType = req.params.file_type // e.g. 'resume' or 'profile_pictures'
 
-        // Allow only 'resume' or 'profile_pictures'
+        // Allow only 'resume' or 'profile_pictures' or 'company_logo'
         if (fileType !== "resume" && fileType !== "profile_picture") {
             return cb(new Error("Invalid upload type."))
         }

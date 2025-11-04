@@ -258,7 +258,7 @@ const handleUserFileUpload = async (req, res) => {
 
         if (fileType === "resume") {
             updateField = { $push: { documents: fileName } };
-        } else if (fileType === "profile_pictures") {
+        } else if (fileType === "profile_picture") {
             updateField = { $set: { profile_picture: fileName } };
         } else {
             throw new Error("Invalid file type. Only 'resume' or 'profile_pictures' allowed.");
