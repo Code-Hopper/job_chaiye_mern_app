@@ -17,12 +17,12 @@ app.use(express.static("public"))
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
-const corsOptions = {
-  origin: "*",  // your React dev URL
-  methods: "*",
-};
+// const corsOptions = {
+//   origin: "*",
+//   methods: "*",
+// };
 
-app.use(cors(corsOptions))
+// app.use(cors(corsOptions))
 
 // routers
 

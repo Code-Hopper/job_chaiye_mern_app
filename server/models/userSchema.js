@@ -1,70 +1,77 @@
 import mongoose from "mongoose";
-import bcrypt from "bcrypt"
+import bcrypt from "bcrypt";
 
-let addressObject = {
-    street: "", city: "", state: "", country: "", pincode: ""
-}
+// Sub-documents
+const addressSchema = {
+    street: { type: String, default: "" },
+    city: { type: String, default: "" },
+    state: { type: String, default: "" },
+    country: { type: String, default: "" },
+    pincode: { type: String, default: "" },
+};
 
-let emailObject = {
-    userEmail: "", verified: false
-}
+const emailSchema = {
+    userEmail: { type: String, required: true },
+    verified: { type: Boolean, default: false },
+};
 
-let userShcema = mongoose.Schema({
+// Main schema
+const userSchema = new mongoose.Schema({
     name: {
         type: String,
-        require: true
+        required: true,
     },
     email: {
-        type: Object,
-        require: true,
-        default: emailObject
+        type: emailSchema,
+        required: true,
     },
     password: {
         type: String,
-        require: true
+        required: true,
     },
     phone: {
         type: String,
-        require: true
+        required: true,
     },
     address: {
-        type: Object,
-        require: true,
-        default: addressObject
+        type: addressSchema,
+        default: {},
     },
     dob: {
         type: String,
-        require: true
+        required: true,
     },
     qualifications: {
         type: String,
-        default: ""
+        default: "",
     },
     documents: {
-        type: Array,
-        default: []
+        type: [String],
+        default: [],
+    },
+    profile_picture: {
+        type: String,
+        default: "",
     },
     appliedJobs: {
-        type: Array,
-        default: []
+        type: [String],
+        default: [],
     },
     timeStamp: {
         type: Date,
-        default: Date.now()
-    }
-})
+        default: Date.now,
+    },
+});
 
-userShcema.pre("save", async function () {
+// Password hashing middleware
+userSchema.pre("save", async function (next) {
     try {
-        console.log("user password is :", this.password)
-        this.password = await bcrypt.hash(this.password, 10)
-        console.log("password hased and saved !")
+        if (!this.isModified("password")) return next();
+        this.password = await bcrypt.hash(this.password, 10);
+        next();
     } catch (err) {
-        console.log("error in pre method : ", err)
-        throw err
+        next(err);
     }
-})
+});
 
-let userModel = new mongoose.model("users", userShcema)
-
-export { userModel }
+export const userModel = mongoose.model("users", userSchema);

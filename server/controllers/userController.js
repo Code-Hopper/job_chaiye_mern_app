@@ -246,26 +246,49 @@ const handleOTPForPasswordReset = async (req, res) => {
     }
 }
 
-const handleUserFileUplaod = async (req, res) => {
+const handleUserFileUpload = async (req, res) => {
     try {
+        if (!req.file) throw new Error("Failed to upload a file!");
 
-        if (!req.file) throw ("failed to upload a file !")
+        const fileName = req.file.filename;
+        const fileType = req.params.file_type; // 'resume' or 'profile_pictures'
 
-        let fileName = req.file.filename
+        // Determine which field to update
+        let updateField = {};
 
-        // update user document with file name
+        if (fileType === "resume") {
+            updateField = { $push: { documents: fileName } };
+        } else if (fileType === "profile_pictures") {
+            updateField = { $set: { profile_picture: fileName } };
+        } else {
+            throw new Error("Invalid file type. Only 'resume' or 'profile_pictures' allowed.");
+        }
 
-        await userModel.updateOne({ "email.userEmail": req.user.email.userEmail }, { $push: { "documents": fileName } })
+        // Update the user document
+        const result = await userModel.updateOne(
+            { "email.userEmail": req.user.email.userEmail },
+            updateField
+        );
 
-        let uploadDest = `uploads/${req.filename}`
+        if (result.modifiedCount === 0) {
+            throw new Error("User not found or file not saved.");
+        }
 
-        res.status(202).json({ message: "file uploaded successfully !", fileName, uploadDest })
+        const uploadDest = `uploads/${fileType}/${fileName}`;
+
+        res.status(202).json({
+            message: `${fileType === "resume" ? "Resume" : "Profile picture"} uploaded successfully!`,
+            fileName,
+            uploadDest,
+        });
 
     } catch (err) {
-        console.log("failed to uplaod file")
-        console.log(err)
-        res.status(500).json({ message: "failed to upload the file in uploads folder :", err })
+        console.error("Error in handleUserFileUpload:", err);
+        res.status(500).json({
+            message: "Failed to upload the file.",
+            error: err.message || err,
+        });
     }
-}
+};
 
-export { test, handleUserRegister, handleOTPVerification, handleUserLogin, handleResetPasswordRequest, handleOTPForPasswordReset, handleUserFileUplaod }
+export { test, handleUserRegister, handleOTPVerification, handleUserLogin, handleResetPasswordRequest, handleOTPForPasswordReset, handleUserFileUpload }
