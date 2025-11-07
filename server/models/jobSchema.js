@@ -16,7 +16,7 @@ const jobRequirementsObject = {
         type: String,
         required: true
     },
-    postData: {
+    postDate: {
         type: Date,
         default: Date.now(),
         required: true
@@ -31,7 +31,7 @@ const jobRequirementsObject = {
     }
 }
 
-const jobScheam = mongoose.Schema({
+const jobSchema = mongoose.Schema({
     title: {
         type: String,
         required: true
@@ -49,11 +49,20 @@ const jobScheam = mongoose.Schema({
         default: [],
         required: false
     },
+    closed: {
+        type: Boolean,
+        default: false
+    },
+    maxApplications: {
+        type: Number,
+        default: 0
+    },
     timeStamp: {
         type: Date,
         default: Date.now()
     }
 })
 
-let jobModel = new mongoose.model("jobs", jobScheam)
+let jobModel = new mongoose.model("jobs", jobSchema)
+
 export { jobModel }
