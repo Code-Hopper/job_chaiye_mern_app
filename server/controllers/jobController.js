@@ -1,6 +1,6 @@
-import { companyModel } from "../models/companySchema";
-import { jobModel } from "../models/jobSchema";
-import { userModel } from "../models/userSchema";
+import { companyModel } from "../models/companySchema.js";
+import { jobModel } from "../models/jobSchema.js";
+import { userModel } from "../models/userSchema.js";
 
 // create a job
 const createJob = async (req, res) => {

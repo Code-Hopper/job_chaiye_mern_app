@@ -5,9 +5,9 @@ import { AuthUser } from "../middlewares/AuthUser.js"
 
 const jobRouter = express.Router()
 
-jobRouter.post("/add-job", authCompany, createJob)
+// jobRouter.post("/add-job", authCompany, createJob)
 
-jobRouter.post("/job-action/:action/:jobId", authCompany, handleJobAction)
+// jobRouter.post("/job-action/:action/:jobId", authCompany, handleJobAction)
 
 jobRouter.post("/apply-for-job/:jobId", AuthUser, handleJobApplication)
 
