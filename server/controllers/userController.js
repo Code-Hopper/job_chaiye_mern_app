@@ -78,9 +78,9 @@ let test = (req, res) => {
 
 let handleUserRegister = async (req, res) => {
     try {
-        let { name, phone, email, address, dob, password } = req.body
+        let { name, phone, email, street, city, state, country, pincode, dob, password } = req.body
 
-        if (!name || !phone || !email || !address || !dob || !password) throw ("invalid/missing data !")
+        if (!name || !phone || !email || !street || !city || !state || !country || !pincode || !dob || !password) throw ("invalid/missing data !")
 
         // check if user exits
         let checkIfUserExits = await userModel.findOne({ $or: [{ "email.userEmail": email }, { "phone": phone }] })
@@ -97,8 +97,12 @@ let handleUserRegister = async (req, res) => {
 
         if (!result.status) throw (`unable to send otp at ${email} | ${result.message}`)
 
+        let address = {
+            street, city, state, country, pincode
+        }
+
         // create user object
-        let newUser = new userModel({ name, phone, email: emailObejct, address, dob, qualifications, password })
+        let newUser = new userModel({ name, phone, email: emailObejct, address, dob, password })
 
         await newUser.save();
 
