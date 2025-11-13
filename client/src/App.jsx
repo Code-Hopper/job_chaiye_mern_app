@@ -10,6 +10,7 @@ import UserLoginRegister from './components/pages/UserLoginRegister.jsx'
 import { UserProvider } from './context/userContext.jsx'
 import { MessageProvider } from './context/messageContext.jsx'
 import Message from './components/sections/actions/Message.jsx'
+import UserDashboard from './components/pages/UserDashboard/UserDashboard.jsx'
 
 const App = () => {
 
@@ -17,11 +18,12 @@ const App = () => {
     <>
       <UserProvider>
         <MessageProvider>
-          <Message/>
+          <Message />
           <Router>
             <Routes>
               <Route path='/' element={<Home />} />
               <Route path='/user-login-register' element={<UserLoginRegister />} />
+              <Route path='/user/dashboard' element={<UserDashboard />} />
             </Routes>
           </Router>
         </MessageProvider>

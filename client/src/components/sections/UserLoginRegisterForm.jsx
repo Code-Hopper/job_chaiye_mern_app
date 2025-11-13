@@ -1,16 +1,23 @@
 import React, { useState } from 'react'
 import OtpInput from 'react-otp-input';
+import { useNavigate } from 'react-router-dom';
 
 import "./styles/UserLoginRegisterForm.scss"
 
 import { FaEye } from "react-icons/fa";
 import { FaEyeSlash } from "react-icons/fa";
 
-import { requestUserRegister, requestUserEmailOtpVerification } from "../../api/userAPI.js"
+import { requestUserRegister, requestUserEmailOtpVerification, requestUserLogin } from "../../api/userAPI.js"
 
 import { useMessage } from '../../context/messageContext';
 
+import { useUser } from '../../context/userContext.jsx';
+
 const UserLoginRegisterForm = () => {
+  
+  let navigate = useNavigate()
+
+  let { fetchUserProfile } = useUser()
 
   let [openFormLogin, setOpenFormLogin] = useState(true)
 
@@ -24,6 +31,10 @@ const UserLoginRegisterForm = () => {
     name: "", phone: "", email: "", password: "", street: "", city: "", state: "", country: "", pincode: "", dob: ""
   })
 
+  let [loginFrom, setLoginForm] = useState({
+    email: "", password: ""
+  })
+
   let [registerFormVerifyOtp, setRegisterFormVerifyOtp] = useState({
     email: "", userOtp: ""
   })
@@ -32,13 +43,43 @@ const UserLoginRegisterForm = () => {
 
   let { triggerMessage } = useMessage()
 
-  const handleLoginFormSubmit = (e) => {
+  const handleLoginFormSubmit = async (e) => {
     try {
       e.preventDefault()
-      triggerMessage("success", "successfully logedIn ! redirecting to dashboard.", true)
+
+      setLoading(true)
+
+      let result = await requestUserLogin(loginFrom)
+
+      if (result.status != 202) throw ("Login Failed !")
+
+      console.log("login successfull : ", result)
+
+      setLoginForm({ email: "", password: "" })
+
+      localStorage.setItem("token", result.data.token)
+
+      triggerMessage("success", result.data.message ? result.data.message : "Login was successfull ! Redirecting to Dashboard.")
+
+      await fetchUserProfile()
+
+      navigate("/user/dashboard")
+
     } catch (err) {
-      triggerMessage("danger", "successfully logedIn ! redirecting to dashboard.", true)
+      console.log("user login failed : ", err)
+      setLoginForm({ email: "", password: "" })
+      triggerMessage("danger", err.response.data.err ? err.response.data.err : err)
+      setLoading(false)
+    } finally {
+      setLoading(false)
     }
+  }
+
+  const handleLoginChange = (e) => {
+    let { name, value } = e.target
+    setLoginForm(prev => {
+      return { ...prev, [name]: value }
+    })
   }
 
   const handleRegisterFormSubmit = async (e) => {
@@ -84,7 +125,7 @@ const UserLoginRegisterForm = () => {
 
       setLoading(true)
 
-      // craeting data
+      // creating data
 
       setRegisterFormVerifyOtp(prev => {
         return { ...prev, userOtp: otp }
@@ -229,7 +270,7 @@ const UserLoginRegisterForm = () => {
                 <div>
                   <span className='opacity-70'>Email</span>
                 </div>
-                <input type="email" id="email" className="mt-2 bg-white border border-gray-300 text-dark text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Please Enter Email" required />
+                <input name='email' onChange={handleLoginChange} value={loginFrom.email} type="email" id="email" className="mt-2 bg-white border border-gray-300 text-dark text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Please Enter Email" required />
               </div>
               <div>
                 <div className='flex justify-between opacity-70'>
@@ -237,7 +278,7 @@ const UserLoginRegisterForm = () => {
                   <span className='text-primary'>Forgot Password ?</span>
                 </div>
                 <div className='flex items-center gap-3'>
-                  <input type={showPassword ? "text" : "password"} id="password" className="mt-2 bg-white border border-gray-300 text-dark text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Please Enter Password" required />
+                  <input name='password' onChange={handleLoginChange} value={loginFrom.password} type={showPassword ? "text" : "password"} id="password" className="mt-2 bg-white border border-gray-300 text-dark text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Please Enter Password" required />
                   <button type='button' onClick={() => setShowPassword(!showPassword)}>
                     {
                       showPassword ?
@@ -248,10 +289,8 @@ const UserLoginRegisterForm = () => {
                 </div>
               </div>
               <div className='flex gap-3 flex-col justify-center'>
-                <button
-                  type='submit'
-                  className='bg-green-600 hover:bg-green-700 text-light font-bold px-6 py-2 rounded transition-all'>
-                  Login
+                <button type='submit' className={`${loading ? "bg-gray-800 hover:bg-gray-800" : "bg-green-600"} hover:bg-green-700 text-light font-bold px-6 py-2 rounded transition-all`} disabled={loading}>
+                  {loading ? "Processing..." : "Login"}
                 </button>
                 <hr />
                 <button type='button' onClick={() => { setOpenFormLogin(false) }} className='bg-gray-300 hover:bg-gray-400 px-6 py-2 rounded transition-all'>New Here? Please Register</button>

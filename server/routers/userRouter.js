@@ -1,5 +1,5 @@
 import express from "express"
-import { test, handleUserRegister, handleOTPVerification, handleUserLogin, handleResetPasswordRequest, handleOTPForPasswordReset, handleUserFileUpload } from "../controllers/userController.js"
+import { test, handleUserRegister, handleOTPVerification, handleUserLogin, handleResetPasswordRequest, handleOTPForPasswordReset, handleUserFileUpload, fetchProfile } from "../controllers/userController.js"
 import { AuthUser } from "../middlewares/AuthUser.js"
 import { upload } from "../config/multerConfig.js"
 
@@ -21,5 +21,7 @@ userRouter.post("/verify-reset-password-request", handleOTPForPasswordReset)
 
 userRouter.post("/upload-file/:file_type", AuthUser, upload.single("file"), handleUserFileUpload)
 // only profile_picture and resume
+
+userRouter.get("/fetch-urser-profile", AuthUser, fetchProfile)
 
 export { userRouter }
