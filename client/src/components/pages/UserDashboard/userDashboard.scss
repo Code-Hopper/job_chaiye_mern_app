@@ -1,0 +1,19 @@
+#user-dashboard {
+    width: 100%;
+    min-height: 80vh;
+    display: grid;
+    grid-template-columns: 25% auto;
+
+    .sidebar-menu{
+        width: 100%;
+        height: 100%;
+        background-color: rgba(var(--dark), .9);
+    }
+
+    .content{
+        width: 100%;
+        height: 100%;
+        background-color: rgba(var(--light), .15);
+    }
+
+}

@@ -4,7 +4,6 @@ import { requestUserProfile } from "../api/userAPI.js"
 
 const userContext = createContext()
 
-
 let UserProvider = ({ children }) => {
 
     let [user, setUser] = useState({
@@ -34,8 +33,15 @@ let UserProvider = ({ children }) => {
         }
     }
 
+    const logout = () => {
+        localStorage.removeItem("token")
+        setUser({
+            logedIn: false
+        })
+    }
+
     return (
-        <userContext.Provider value={{ user, fetchUserProfile }}>
+        <userContext.Provider value={{ user, fetchUserProfile, logout }}>
             {children}
         </userContext.Provider>
     )
