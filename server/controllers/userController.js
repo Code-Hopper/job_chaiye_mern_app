@@ -253,7 +253,6 @@ const handleOTPForPasswordReset = async (req, res) => {
 const handleUserFileUpload = async (req, res) => {
     try {
         if (!req.file) throw new Error("Failed to upload a file!");
-
         const fileName = req.file.filename;
         const fileType = req.params.file_type; // 'resume' or 'profile_pictures'
 

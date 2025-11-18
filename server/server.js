@@ -15,6 +15,8 @@ const app = express()
 let port = process.env.PORT || 5012
 
 app.use(express.static("public"))
+
+
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
@@ -30,6 +32,8 @@ app.use(cors(corsOptions))
 app.use("/user", userRouter)
 
 app.use("/job", jobRouter)
+
+app.use(express.static("uploads"))
 
 // app.use("/company", companyRouter)
 
