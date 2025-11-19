@@ -11,6 +11,9 @@ import { FaLocationDot } from "react-icons/fa6";
 import { useUser } from '../../../../context/userContext'
 import { userProfilePicture } from '../../../../api/userAPI';
 import { useMessage } from '../../../../context/messageContext';
+import { requestOTPForPasswordReset } from '../../../../api/userAPI';
+import { requestUserEmailOtpVerificationPasswordReset } from "../../../../api/userAPI"
+import OtpInput from 'react-otp-input';
 
 const Profile = () => {
 
@@ -18,13 +21,25 @@ const Profile = () => {
 
     let [triggerEditForm, setTriggerEditForm] = useState(false)
 
-    const EditPopUpForm = ({ close }) => {
+    let { triggerMessage } = useMessage()
+
+    const EditPopUpForm = ({ close, openTab }) => {
 
         let [profilePicture, setProfilePicture] = useState()
 
         let [tab, setTab] = useState("profile");
 
-        let { triggerMessage } = useMessage()
+        let { user } = useUser();
+
+        let [loading, setLoading] = useState(false)
+
+        let [otp, setOtp] = useState(0)
+
+        let [openOTPFormForPasswordReset, setOpenOTPFormForPasswordReset] = useState(true)
+
+        let [newPasswordForm, setNewPasswordForm] = useState({
+            email: "", userOtp: "", newPassword: ""
+        })
 
         const handleProfilePictureChange = (e) => {
             setProfilePicture(e.target.files[0])
@@ -45,12 +60,63 @@ const Profile = () => {
 
                 triggerMessage("success", "Profile picture uploaded!");
 
-                close();
+                // close();
             } catch (err) {
                 triggerMessage("danger", err?.response?.data?.message || "Upload failed");
-                close();
+                // close();
             }
         };
+
+        const handlePasswordResetButtonClick = async () => {
+            setOpenOTPFormForPasswordReset(true)
+
+            try {
+                let result = await requestOTPForPasswordReset(user.email.userEmail)
+
+                console.log(result)
+
+                triggerMessage("success", `sent an otp at ${user ? user.email.userEmail : "not found !"}`)
+
+            } catch (err) {
+                console.log('failed to send an otp for password reset !', err)
+                triggerMessage("danger", "failed to send OTP for password reset !")
+            }
+        }
+
+        const handlePasswordResetOtpVerification = async (e, email) => {
+            e.preventDefault()
+            try {
+
+                setLoading(true)
+                // creating data
+                // setNewPasswordForm(prev => {
+                //     return { ...prev, email: email, userOtp: otp }
+                // })
+
+                let playLoad = {
+                    email: email,
+                    userOtp: otp,
+                    newPassword: newPasswordForm.newPassword
+                }
+
+                let result = await requestUserEmailOtpVerificationPasswordReset(playLoad)
+
+                if (result.status != 202) throw ("unable to verify OTP !")
+
+                triggerMessage("success", result.data.message ? result.data.message : "OTP verifed successfully & password reseted !", true)
+
+                setOpenOTPFormForPasswordReset(false)
+
+                // close()
+
+            } catch (err) {
+                console.log("verify otp error : ", err)
+                triggerMessage("danger", err.message ? err.message : err, true)
+                setLoading(false)
+            } finally {
+                setLoading(false)
+            }
+        }
 
         return (
             <div id='edit-pop-up-form'>
@@ -58,6 +124,7 @@ const Profile = () => {
 
                     {/* Close Button */}
                     <button
+                        type='button'
                         onClick={close}
                         className='absolute left-full -translate-x-1/2 top-0 -translate-y-1/2 bg-red-500 hover:bg-red-700 transition p-2 font-bold rounded-full text-light'
                     >
@@ -66,13 +133,13 @@ const Profile = () => {
 
                     {/* Tabs */}
                     <div className='flex justify-around mb-5'>
-                        <button className={`tab-btn ${tab === "profile" ? "active" : ""}`} onClick={() => setTab("profile")}>
+                        <button type='button' className={`tab-btn ${tab === "profile" ? "active" : ""}`} onClick={() => setTab("profile")}>
                             Upload Profile
                         </button>
-                        <button className={`tab-btn ${tab === "password" ? "active" : ""}`} onClick={() => setTab("password")}>
+                        <button type='button' className={`tab-btn ${tab === "password" ? "active" : ""}`} onClick={() => setTab("password")}>
                             Reset Password
                         </button>
-                        <button className={`tab-btn ${tab === "docs" ? "active" : ""}`} onClick={() => setTab("docs")}>
+                        <button type='button' className={`tab-btn ${tab === "docs" ? "active" : ""}`} onClick={() => setTab("docs")}>
                             Upload Documents
                         </button>
                     </div>
@@ -104,31 +171,55 @@ const Profile = () => {
                             <div className='flex flex-col gap-4'>
                                 <h2 className='font-bold text-lg'>Reset Password</h2>
 
-                                <input
-                                    type="text"
-                                    placeholder='Enter Phone Number'
-                                    className='border p-2 rounded'
-                                />
+                                {
+                                    openOTPFormForPasswordReset ?
+                                        <div className='verify-password-reset'>
+                                            <form onSubmit={(e) => { handlePasswordResetOtpVerification(e, user ? user.email.userEmail : "") }} className='h-full flex flex-col justify-center items-center p-5 gap-3'>
+                                                <h1 className='text-2xl font-bold'>Verify <span className='text-primary'>Email</span></h1>
+                                                <span className='text-center'>An otp has been sent on email <span className='text-primary'>{user ? user.email.userEmail : ""}</span></span>
+                                                <OtpInput
+                                                    value={otp}
+                                                    onChange={setOtp}
+                                                    numInputs={4}
+                                                    renderSeparator={<span className='mx-2'>-</span>}
+                                                    isInputNum={true}
+                                                    shouldAutoFocus={true}
+                                                    inputStyle={{
+                                                        border: "1px solid black",
+                                                        borderRadius: "8px",
+                                                        width: "54px",
+                                                        height: "54px",
+                                                        fontSize: "12px",
+                                                        color: "#000",
+                                                        fontWeight: "400",
+                                                        caretColor: "blue"
+                                                    }}
+                                                    focusStyle={{
+                                                        border: "1px solid #CFD3DB",
+                                                        outline: "none"
+                                                    }}
+                                                    renderInput={(props) => <input {...props} />}
+                                                />
+                                                <input name="newPassword" value={newPasswordForm.newPassword} onChange={(e) => {
+                                                    setNewPasswordForm(prev => {
+                                                        return { ...prev, newPassword: e.target.value }
+                                                    })
+                                                }} className="mt-2 bg-white border border-gray-300 text-dark text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" type="text" placeholder='Enter new password !' />
+                                                <button type='submit' className={`${loading ? "bg-gray-800 hover:bg-gray-800" : "bg-green-600"} hover:bg-green-700 text-light font-bold px-6 py-2 rounded transition-all`} disabled={loading}>
+                                                    {loading ? "Processing..." : "Verify OTP"}
+                                                </button>
+                                            </form>
+                                        </div>
+                                        :
+                                        <div className='p-4 my-2 flex flex-col gap-4 justify-center items-center'>
+                                            <span>Click on request to send an OTP</span>
+                                            <span className='rounded text-light font-bold p-3 bg-[rgba(var(--primary),.75)]'>at {user ? user.email.userEmail : "not found !"}</span>
+                                            <button type='button' onClick={handlePasswordResetButtonClick} className='bg-green-400 rounded hover:bg-green-500 px-2 py-1'>
+                                                Request
+                                            </button>
+                                        </div>
+                                }
 
-                                <button className='bg-dark text-light p-2 rounded hover:bg-primary transition'>
-                                    Send OTP
-                                </button>
-
-                                <input
-                                    type="text"
-                                    placeholder='Enter OTP'
-                                    className='border p-2 rounded'
-                                />
-
-                                <input
-                                    type="password"
-                                    placeholder='New Password'
-                                    className='border p-2 rounded'
-                                />
-
-                                <button className='bg-primary text-light p-2 rounded hover:bg-dark'>
-                                    Reset Password
-                                </button>
                             </div>
                         )}
 
@@ -144,7 +235,7 @@ const Profile = () => {
                                     className='border p-2 rounded'
                                 />
 
-                                <button className='bg-primary text-light p-2 rounded hover:bg-dark'>
+                                <button type='button' className='bg-primary text-light p-2 rounded hover:bg-dark'>
                                     Upload Documents
                                 </button>
                             </div>
@@ -170,7 +261,7 @@ const Profile = () => {
                                 user.logedIn ?
                                     user.profile_picture ?
                                         <img src={user.logedIn ? `${import.meta.env.VITE_BASE_API_URL}/profile_pictures/${user.profile_picture}` : ""} alt="Profile Picture" /> :
-                                        <button onClick={() => setTriggerEditForm(!triggerEditForm)} className='bg-primary p-1 text-light rounded hover:bg-dark transition'>+ Profile Picture</button>
+                                        <button onClick={() => setTriggerEditForm(true)} className='bg-primary p-1 text-light rounded hover:bg-dark transition'>+ Profile Picture</button>
                                     : null
                             }
                         </div>
@@ -213,7 +304,11 @@ const Profile = () => {
                                 </span>
                             </div>
                         </div>
-                        {/* Password Reset */}
+                        {/* Password Reset and document uploads */}
+                        <div className='p-3 flex gap-4'>
+                            <button onClick={() => setTriggerEditForm(true)} className='bg-primary p-1 text-light rounded hover:bg-dark transition'>Password Reset</button>
+                            <button onClick={() => setTriggerEditForm(true)} className='bg-primary p-1 text-light rounded hover:bg-dark transition'>Upload Resume</button>
+                        </div>
                     </div>
                     <div className='reports p-3'>
                         {/* reports */}
