@@ -86,3 +86,41 @@ export const requestUserEmailOtpVerificationPasswordReset = async (data) => {
         throw err
     }
 }
+
+export const uploadResume = async (token, formData) => {
+    try {
+        const result = await axios.post(
+            `${baseUrl}/upload-file/resume`,
+            formData,
+            {
+                headers: {
+                    authorization: token,
+                }
+            }
+        );
+
+        return result.data;
+
+    } catch (err) {
+        throw err;
+    }
+};
+
+export const uploadBIO = async (token, newBio) => {
+    try {
+        const result = await axios.post(
+            `${baseUrl}/upload-new-bio`,
+            newBio,
+            {
+                headers: {
+                    authorization: token,
+                }
+            }
+        );
+
+        return result.data;
+
+    } catch (err) {
+        throw err;
+    }
+};

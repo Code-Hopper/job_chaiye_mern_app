@@ -4,6 +4,7 @@
     grid-template-columns: 1fr;
     grid-template-rows: 40% auto;
     background: rgba(var(--light), 1);
+    overflow-y: scroll;
 
     .information {
         width: 100%;

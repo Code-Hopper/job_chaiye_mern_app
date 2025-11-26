@@ -37,6 +37,9 @@ const userSchema = new mongoose.Schema({
         type: addressSchema,
         default: {},
     },
+    bio: {
+        type: String
+    },
     dob: {
         type: String,
         required: true,
