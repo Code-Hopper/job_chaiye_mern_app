@@ -1,5 +1,10 @@
 import React, { useState } from 'react'
 
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+
+import EditorToolbar from './EditorToolbar';
+
 // style
 import "./user-action.scss"
 
@@ -167,6 +172,19 @@ const Profile = () => {
             setResumeUploadLoading(false)
         }
     };
+
+    const editor = useEditor({
+        extensions: [
+            StarterKit, // Includes basic formatting like bold, italic, headings, etc.
+            // Add other extensions as needed, e.g., Image, Table, Link
+        ],
+        content: '<p>Hello, Tiptap!</p>', // Initial content for the editor
+        onUpdate: ({ editor }) => {
+            // Handle editor content changes here
+            const html = editor.getHTML();
+            console.log(html);
+        },
+    });
 
     return (
 
@@ -429,6 +447,12 @@ const Profile = () => {
                                     {resumeUploadLoading ? "Uploading..." : "Upload Resume"}
                                 </button>
                             </div>
+
+                            {/* bio editor */}
+
+                            <EditorToolbar editor={editor} />
+                            <EditorContent editor={editor} />
+
                         </div>
                     </div>
                 </div>

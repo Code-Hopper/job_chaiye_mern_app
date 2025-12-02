@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { mongo } from "mongoose";
 const jobRequirementsObject = {
     type: {
         type: String,
@@ -37,7 +37,8 @@ const jobSchema = mongoose.Schema({
         required: true
     },
     jobCreatedBy: {
-        type: String,
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "companies",
         required: true
     },
     jobRequirements: {
@@ -45,8 +46,8 @@ const jobSchema = mongoose.Schema({
         default: jobRequirementsObject
     },
     applications: {
-        type: Array,
-        default: [],
+        type: [mongoose.Schema.Types.ObjectId],
+        ref: "users",
         required: false
     },
     closed: {
@@ -66,3 +67,25 @@ const jobSchema = mongoose.Schema({
 let jobModel = new mongoose.model("jobs", jobSchema)
 
 export { jobModel }
+
+
+
+// {
+//   "title": "Full Stack MERN Developer",
+//   "jobCreatedBy": "692e76358c8b01ed527b27b7",
+//   "jobRequirements": {
+//     "type": "Full-Time",
+//     "category": "Software Development",
+//     "exprience": "2-4 years",
+//     "location": "Pune, Maharashtra",
+//     "offeredSalary": 45000,
+//     "description": "We are looking for a MERN Stack Developer with strong frontend + backend expertise."
+//   },
+//   "applications": [
+//     {
+//       "_id": "69144467202cb2a8f0d1865a"
+//     }
+//   ],
+//   "closed": false,
+//   "maxApplications": 50
+// }

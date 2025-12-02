@@ -4,6 +4,7 @@ import { redisClient } from "../utils/redisClient.js"
 import { userModel } from "../models/userSchema.js"
 import jwt from "jsonwebtoken"
 import bcrypt from "bcrypt"
+import { jobModel } from "../models/jobSchema.js"
 
 dotenv.config({ path: "./config.env" })
 
@@ -334,5 +335,43 @@ const addBio = async (req, res) => {
     }
     let user = req.user
 }
+
+const fetchAppliedJobs = async (req, res) => {
+    try {
+
+        // userId : 69144467202cb2a8f0d1865a
+
+        // {
+        //     user Details,
+        //     appliedJobs: [
+        //         {
+        //             jobDetails
+        //         }
+        //     ]
+        // }
+
+        let result = await userModel.findById("69144467202cb2a8f0d1865a")
+
+        console.log(result).populate("appliedJobs")
+
+    } catch (err) {
+        console.log('faile to find user')
+    }
+}
+
+const fetchJobApplicants = async (req, res) => {
+    try {
+
+        let result = await jobModel.findById("692e775c488339627741c778").populate("applications")
+
+        console.log(result)
+
+    } catch (err) {
+        console.log("failed to get users !")
+    }
+}
+
+// fetchAppliedJobs()
+fetchJobApplicants()
 
 export { test, handleUserRegister, handleOTPVerification, handleUserLogin, handleResetPasswordRequest, handleOTPForPasswordReset, handleUserFileUpload, fetchProfile, addBio }

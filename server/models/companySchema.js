@@ -85,3 +85,46 @@ companySchema.pre("save", async function (next) {
 let companyModel = new mongoose.model("companies", companySchema)
 
 export { companyModel }
+
+// /** 
+// * Paste one or more documents here
+// */
+// {
+//   "companyDetails": {
+//     "name": "Tech Prism Pvt Ltd",
+//     "est_year": "2015",
+//     "address": {
+//       "street": "MG Road",
+//       "city": "Pune",
+//       "state": "Maharashtra",
+//       "country": "India",
+//       "pincode": "411001"
+//     },
+//     "bio": "We are a software development and IT consulting company.",
+//     "website": "https://techprism.in",
+//     "industryType": "Software Development",
+//     "founders": [
+//       "Amey Khondekar",
+//       "John Doe"
+//     ],
+//     "hrEmail": "hr@techprism.in"
+//   },
+//   "contact_person": {
+//     "name": "Amey Khondekar",
+//     "phone": "9876543210",
+//     "email": "amey@techprism.in",
+//     "position": "HR Manager"
+//   },
+//   "email": {
+//     "userEmail": "company@techprism.in",
+//     "verified": true
+//   },
+//   "phone": "9876543210",
+//   "companyLogo": "uploads/company-logo.png",
+//   "documents": [
+//     "uploads/doc1.pdf",
+//     "uploads/doc2.pdf"
+//   ],
+//   "createJobs": [],
+//   "password": "Company@123"
+// }
