@@ -1,17 +1,21 @@
 import React from 'react'
+import { useParams } from 'react-router-dom'
 
 import Header from '../sections/includes/Header'
 import Footer from '../sections/includes/Footer'
-import JobsGrid from '../sections/jobs/JobsGrid'
+import JobPage from '../sections/jobs/JobPage'
 
-const Home = () => {
+const DisplayJob = () => {
+
+    let { jobId } = useParams()
+
     return (
         <>
             <Header />
-            <JobsGrid />
+            <JobPage jobId={jobId} />
             <Footer />
         </>
     )
 }
 
-export default Home
+export default DisplayJob
