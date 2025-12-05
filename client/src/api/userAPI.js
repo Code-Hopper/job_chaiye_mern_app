@@ -108,6 +108,9 @@ export const uploadResume = async (token, formData) => {
 
 export const uploadBIO = async (token, newBio) => {
     try {
+
+        console.log("new bio : ", newBio)
+
         const result = await axios.post(
             `${baseUrl}/upload-new-bio`,
             newBio,
@@ -123,4 +126,12 @@ export const uploadBIO = async (token, newBio) => {
     } catch (err) {
         throw err;
     }
+};
+
+export const deleteResume = async (token) => {
+    return axios.delete(`${baseUrl}/delete-resume`, {
+        headers: {
+            authorization: token,
+        }
+    });
 };

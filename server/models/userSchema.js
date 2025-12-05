@@ -48,9 +48,9 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: "",
     },
-    documents: {
-        type: [String],
-        default: [],
+    document: {
+        type: String,
+        default: ""
     },
     profile_picture: {
         type: String,
@@ -79,47 +79,3 @@ userSchema.pre("save", async function (next) {
 });
 
 export const userModel = mongoose.model("users", userSchema);
-
-
-// /** 
-// * Paste one or more documents here
-// */
-// {
-//   "name": "Amey Anil Khondekar",
-//   "email": {
-//     "userEmail": "ameykhondekar01@gmail.com",
-//     "verified": true,
-//     "_id": {
-//       "$oid": "69144467202cb2a8f0d1865b"
-//     }
-//   },
-//   "password": "$2b$10$EHpVH5f57f7tmKjprRzR3eOr.a0pnJILCKuhXOTaDLAHvJ876FaH.",
-//   "phone": "09766696550",
-//   "address": {
-//     "street": "sakkaradhara",
-//     "city": "nagpur",
-//     "state": "Maharashtra",
-//     "country": "India",
-//     "pincode": "440024",
-//     "_id": {
-//       "$oid": "69144467202cb2a8f0d1865c"
-//     }
-//   },
-//   "dob": "2025-05-11",
-//   "qualifications": "",
-//   "documents": [
-//     "1764144448318-ERP_Documentation.pdf",
-//     "1764144472221-Pharma-billing-backend-and-frontend-blueprint.pdf",
-//     "1764314391799-loan_amortization.pdf"
-//   ],
-//   "profile_picture": "1764314630441-352.jpg",
-//   "appliedJobs": [
-//     {
-//       "_id": "692e775c488339627741c778"
-//     }
-//   ],
-//   "timeStamp": {
-//     "$date": "2025-11-12T08:25:11.266Z"
-//   },
-//   "__v": 0
-// }

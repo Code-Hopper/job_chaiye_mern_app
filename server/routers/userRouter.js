@@ -1,5 +1,5 @@
 import express from "express"
-import { test, handleUserRegister, handleOTPVerification, handleUserLogin, handleResetPasswordRequest, handleOTPForPasswordReset, handleUserFileUpload, fetchProfile, addBio } from "../controllers/userController.js"
+import { test, handleUserRegister, handleOTPVerification, handleUserLogin, handleResetPasswordRequest, handleOTPForPasswordReset, handleUserFileUpload, fetchProfile, addBio, deleteResume } from "../controllers/userController.js"
 import { AuthUser } from "../middlewares/AuthUser.js"
 import { upload } from "../config/multerConfig.js"
 
@@ -24,6 +24,8 @@ userRouter.post("/upload-file/:file_type", AuthUser, upload.single("file"), hand
 
 userRouter.get("/fetch-urser-profile", AuthUser, fetchProfile)
 
-userRouter.get("/upload-new-bio", AuthUser, addBio)
+userRouter.post("/upload-new-bio", AuthUser, addBio)
+
+userRouter.delete("/delete-resume", AuthUser, deleteResume)
 
 export { userRouter }

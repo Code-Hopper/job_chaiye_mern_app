@@ -6,7 +6,7 @@ export const fetchAllJobs = async () => {
     try {
         let result = axios({
             method: "GET",
-            url: `${baseUrl}/get-jobs`
+            url: `${baseUrl}/all`
         })
         return result
     } catch (err) {

@@ -38,22 +38,3 @@ const App = () => {
 }
 
 export default App
-
-
-// fetch all jobs -> create page for each job -> display job info and posted by info -> then create a company public page
-
-// new user(Not logedIn Yet)
-// home (Job grid)
-// company public page
-// single job page
-
-// new user(logedIn)
-// apply to job
-// dashboard
-  // create/edit profile
-  // track job application
-
-// company dashboard
-// create jobs
-// edit profile
-// view application

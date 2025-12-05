@@ -1,130 +1,103 @@
 import mongoose from "mongoose";
+import bcrypt from "bcrypt";
 
-// Sub-documents
-const addressSchema = {
-    street: { type: String, default: "" },
-    city: { type: String, default: "" },
-    state: { type: String, default: "" },
-    country: { type: String, default: "" },
-    pincode: { type: String, default: "" },
-};
+/* ------------------ SUB SCHEMAS ------------------ */
 
-const emailSchema = {
-    userEmail: { type: String, required: true },
-    verified: { type: Boolean, default: false },
-};
-
-const contactPersonScheam = {
-    name: { type: String, required: true },
-    phone: { type: String, required: true },
-    email: { type: String, required: true },
-    position: { type: String, required: true }
-}
-
-const companyDetailsSchema = {
-    name: { type: String, required: true },
-    est_year: { type: String, required: true },
-    address: { type: Object, default: addressSchema },
-    bio: { type: String, required: true },
-    website: { type: String, required: false },
-    industryType: { type: String, required: true },
-    founders: { type: Array },
-    hrEmail: { type: String, required: true }
-}
-
-let companySchema = mongoose.Schema({
-    companyDetails: {
-        type: Object,
-        required: true,
-        default: companyDetailsSchema
-    },
-    contact_person: {
-        type: Object,
-        required: true,
-        default: contactPersonScheam
-    },
-    email: {
-        type: Object,
-        required: true,
-        default: emailSchema
-    },
-    phone: {
-        type: String,
-        required: true
-    },
-    companyLogo: {
-        type: String,
-        required: false
-    },
-    documents: {
-        type: Array,
-        default: []
-    },
-    createJobs: {
-        type: Array,
-        default: []
-    },
-    password: {
-        type: String,
-        required: true
-    }
-})
-
-
-// Password hashing middleware
-companySchema.pre("save", async function (next) {
-    try {
-        if (!this.isModified("password")) return next();
-        this.password = await bcrypt.hash(this.password, 10);
-        next();
-    } catch (err) {
-        next(err);
-    }
+const addressSchema = new mongoose.Schema({
+  street: { type: String, default: "" },
+  city: { type: String, default: "" },
+  state: { type: String, default: "" },
+  country: { type: String, default: "" },
+  pincode: { type: String, default: "" },
 });
 
-let companyModel = new mongoose.model("companies", companySchema)
+const emailSchema = new mongoose.Schema({
+  userEmail: { type: String, required: true },
+  verified: { type: Boolean, default: false },
+});
 
-export { companyModel }
+const contactPersonSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  phone: { type: String, required: true },
+  email: { type: String, required: true },
+  position: { type: String, required: true },
+});
 
-// /** 
-// * Paste one or more documents here
-// */
-// {
-//   "companyDetails": {
-//     "name": "Tech Prism Pvt Ltd",
-//     "est_year": "2015",
-//     "address": {
-//       "street": "MG Road",
-//       "city": "Pune",
-//       "state": "Maharashtra",
-//       "country": "India",
-//       "pincode": "411001"
-//     },
-//     "bio": "We are a software development and IT consulting company.",
-//     "website": "https://techprism.in",
-//     "industryType": "Software Development",
-//     "founders": [
-//       "Amey Khondekar",
-//       "John Doe"
-//     ],
-//     "hrEmail": "hr@techprism.in"
-//   },
-//   "contact_person": {
-//     "name": "Amey Khondekar",
-//     "phone": "9876543210",
-//     "email": "amey@techprism.in",
-//     "position": "HR Manager"
-//   },
-//   "email": {
-//     "userEmail": "company@techprism.in",
-//     "verified": true
-//   },
-//   "phone": "9876543210",
-//   "companyLogo": "uploads/company-logo.png",
-//   "documents": [
-//     "uploads/doc1.pdf",
-//     "uploads/doc2.pdf"
-//   ],
-//   "createJobs": [],
-//   "password": "Company@123"
-// }
+const companyDetailsSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  est_year: { type: String, required: true },
+  address: { type: addressSchema, default: () => ({}) },
+  bio: { type: String, required: true },
+  website: { type: String },
+  industryType: { type: String, required: true },
+  founders: { type: [String], default: [] },
+  hrEmail: { type: String, required: true },
+});
+
+/* ------------------ MAIN COMPANY SCHEMA ------------------ */
+
+const companySchema = new mongoose.Schema(
+  {
+    companyDetails: {
+      type: companyDetailsSchema,
+      required: true,
+    },
+
+    contact_person: {
+      type: contactPersonSchema,
+      required: true,
+    },
+
+    email: {
+      type: emailSchema,
+      required: true,
+    },
+
+    phone: {
+      type: String,
+      required: true,
+    },
+
+    companyLogo: {
+      type: String,
+      default: "",
+    },
+
+    // ✅ ONLY **ONE DOCUMENT** (resume / registration proof)
+    document: {
+      type: String,
+      default: "",
+    },
+
+    // ✅ Job references created by this company
+    createdJobs: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "jobs",
+      },
+    ],
+
+    password: {
+      type: String,
+      required: true,
+    },
+  },
+  { timestamps: true }
+);
+
+/* ------------------ PASSWORD HASHING ------------------ */
+
+companySchema.pre("save", async function (next) {
+  try {
+    if (!this.isModified("password")) return next();
+    this.password = await bcrypt.hash(this.password, 10);
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
+
+/* ------------------ MODEL EXPORT ------------------ */
+
+const companyModel = mongoose.model("companies", companySchema);
+export { companyModel };

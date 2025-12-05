@@ -1,16 +1,28 @@
-import express from "express"
+import express from "express";
+import {
+  createJob,
+  fetchAllJobs,
+  fetchCompanyJobs,
+  applyJob,
+  closeJob,
+  fetchAppliedUsers,
+} from "../controllers/jobController.js";
 
-import { createJob, getJobData, handleJobAction, handleJobApplication } from "../controllers/jobController.js"
-import { AuthUser } from "../middlewares/AuthUser.js"
+import { AuthCompany } from "../middlewares/AuthCompany.js";
+import { AuthUser } from "../middlewares/AuthUser.js";
 
-const jobRouter = express.Router()
+const jobRouter = express.Router();
 
-// jobRouter.post("/add-job", authCompany, createJob)
+/* -------- PUBLIC -------- */
+jobRouter.get("/all", fetchAllJobs);
 
-// jobRouter.post("/job-action/:action/:jobId", authCompany, handleJobAction)
+/* -------- COMPANY -------- */
+jobRouter.post("/create", AuthCompany, createJob);
+jobRouter.get("/company", AuthCompany, fetchCompanyJobs);
+jobRouter.put("/close/:jobId", AuthCompany, closeJob);
+jobRouter.get("/applications/:jobId", AuthCompany, fetchAppliedUsers);
 
-jobRouter.post("/apply-for-job/:jobId", AuthUser, handleJobApplication)
+/* -------- USER -------- */
+jobRouter.post("/apply/:jobId", AuthUser, applyJob);
 
-jobRouter.get("/get-jobs", getJobData)
-
-export { jobRouter }
+export { jobRouter };

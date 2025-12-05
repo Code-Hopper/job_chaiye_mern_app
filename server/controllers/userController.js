@@ -267,7 +267,7 @@ const handleUserFileUpload = async (req, res) => {
         let updateField = {};
 
         if (fileType === "resume") {
-            updateField = { $push: { documents: fileName } };
+            updateField = { $set: { document: fileName } };
         } else if (fileType === "profile_picture") {
             updateField = { $set: { profile_picture: fileName } };
         } else {
@@ -322,56 +322,39 @@ const addBio = async (req, res) => {
 
         let user = req.user
 
-        let { newBio } = req.body
+        let { bio } = req.body
 
         if (!user) throw ("not validated as user | please relogin")
 
-        await userModel.updateOne({ email: user.email.userEmail }, { $set: { bio: newBio } })
+        await userModel.updateOne({ "email.userEmail": user.email.userEmail }, { $set: { bio: bio } })
 
         res.status(202).json({ message: "bio update successfully !" })
     } catch (err) {
-        console.log("error while updating user bio")
+        console.log("error while updating user bio : ", err)
         res.status(500).json({ message: "failed to update bio", err })
     }
     let user = req.user
 }
 
-const fetchAppliedJobs = async (req, res) => {
+export const deleteResume = async (req, res) => {
     try {
+        const result = await userModel.updateOne(
+            { "email.userEmail": req.user.email.userEmail },
+            { $set: { document: "" } }
+        );
 
-        // userId : 69144467202cb2a8f0d1865a
+        if (result.modifiedCount === 0) {
+            return res.status(400).json({ message: "Resume not found!" });
+        }
 
-        // {
-        //     user Details,
-        //     appliedJobs: [
-        //         {
-        //             jobDetails
-        //         }
-        //     ]
-        // }
-
-        let result = await userModel.findById("69144467202cb2a8f0d1865a")
-
-        console.log(result).populate("appliedJobs")
+        res.status(200).json({ message: "Resume deleted successfully!" });
 
     } catch (err) {
-        console.log('faile to find user')
+        res.status(500).json({
+            message: "Failed to delete resume!",
+            error: err.message
+        });
     }
-}
-
-const fetchJobApplicants = async (req, res) => {
-    try {
-
-        let result = await jobModel.findById("692e775c488339627741c778").populate("applications")
-
-        console.log(result)
-
-    } catch (err) {
-        console.log("failed to get users !")
-    }
-}
-
-// fetchAppliedJobs()
-fetchJobApplicants()
+};
 
 export { test, handleUserRegister, handleOTPVerification, handleUserLogin, handleResetPasswordRequest, handleOTPForPasswordReset, handleUserFileUpload, fetchProfile, addBio }

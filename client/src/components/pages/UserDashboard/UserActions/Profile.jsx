@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -18,7 +18,14 @@ import { useUser } from '../../../../context/userContext'
 import { useMessage } from '../../../../context/messageContext';
 
 // user api
-import { userProfilePicture, requestOTPForPasswordReset, requestUserEmailOtpVerificationPasswordReset, uploadResume, uploadBIO } from '../../../../api/userAPI';
+import {
+    userProfilePicture,
+    requestOTPForPasswordReset,
+    requestUserEmailOtpVerificationPasswordReset,
+    uploadResume,
+    uploadBIO,
+    deleteResume
+} from '../../../../api/userAPI';
 
 // dependency
 import OtpInput from 'react-otp-input';
@@ -26,26 +33,36 @@ import OtpInput from 'react-otp-input';
 const Profile = () => {
 
     let { user, fetchUserProfile } = useUser()
-
     let { triggerMessage } = useMessage()
 
     let [triggerProfilePictureChange, setTriggerProfilePictureChange] = useState(false)
-
     let [selectedImage, setSelectedImage] = useState(null)
-
     let [previewUrl, setPreviewUrl] = useState(null)
 
     let [passwordResetRequest, setPasswordResetRequest] = useState(false)
-
-    let [newPassword, setNewPassword] = useState({
-        password: "", otp: ""
-    })
-
+    let [newPassword, setNewPassword] = useState({ password: "", otp: "" })
     let [loading, setLoading] = useState(false)
 
     let [resumeFile, setResumeFile] = useState(null)
-
     let [resumeUploadLoading, setResumeUploadLoading] = useState(false)
+
+    let [isEditingBio, setIsEditingBio] = useState(false);
+    let [bioLoading, setBioLoading] = useState(false);
+
+    let [deleteLoading, setDeleteLoading] = useState(false)
+
+    // ✅ FIXED EDITOR INITIALIZATION
+    const editor = useEditor({
+        extensions: [StarterKit],
+        content: user?.bio || "<p>Write something about yourself...</p>",
+    });
+
+    // ✅ LOAD BIO AFTER API DATA ARRIVES
+    useEffect(() => {
+        if (editor && user?.bio) {
+            editor.commands.setContent(user.bio);
+        }
+    }, [user, editor]);
 
     const handleDrop = (e) => {
         e.preventDefault();
@@ -58,9 +75,7 @@ const Profile = () => {
         }
     }
 
-    const handleDragOver = (e) => {
-        e.preventDefault()
-    }
+    const handleDragOver = (e) => e.preventDefault()
 
     const handleFileSelect = (e) => {
         const file = e.target.files[0]
@@ -78,14 +93,10 @@ const Profile = () => {
 
         try {
             let token = localStorage.getItem("token");
-
-            let result = await userProfilePicture(token, formData);
-
-            console.log(result)
+            await userProfilePicture(token, formData);
 
             setTriggerProfilePictureChange(false)
             triggerMessage("success", "Profile picture uploaded!");
-            // window.redirect("/")
             fetchUserProfile()
             setPreviewUrl(null)
             setSelectedImage(null)
@@ -97,16 +108,13 @@ const Profile = () => {
     }
 
     const handlePasswordResetButtonClick = async () => {
+        if (!user?.email?.userEmail) return;
+
         setPasswordResetRequest(true)
         try {
-            let result = await requestOTPForPasswordReset(user.email.userEmail)
-
-            console.log(result)
-
-            triggerMessage("success", `sent an otp at ${user ? user.email.userEmail : "not found !"}`)
-
+            await requestOTPForPasswordReset(user.email.userEmail)
+            triggerMessage("success", `sent an otp at ${user.email.userEmail}`)
         } catch (err) {
-            console.log('failed to send an otp for password reset !', err)
             triggerMessage("danger", "failed to send OTP for password reset !")
         }
     }
@@ -120,27 +128,19 @@ const Profile = () => {
                 ...newPassword
             }
 
-            console.log(playLoad)
-
             let result = await requestUserEmailOtpVerificationPasswordReset(playLoad)
 
-            if (result.status != 202) throw ("unable to verify OTP !")
+            if (result.status !== 202) throw new Error("unable to verify OTP")
 
-            triggerMessage("success", result.data.message ? result.data.message : "OTP verifed successfully & password reseted !", true)
+            triggerMessage("success", result.data?.message || "Password reset successful", true)
 
             setPasswordResetRequest(false)
-            setNewPassword({
-                password: "", otp: ""
-            })
+            setNewPassword({ password: "", otp: "" })
 
         } catch (err) {
-            console.log("verify otp error : ", err)
-            triggerMessage("danger", err.message ? err.message : err, true)
+            triggerMessage("danger", err?.message || "OTP verification failed", true)
             setPasswordResetRequest(false)
-            setNewPassword({
-                password: "", otp: ""
-            })
-            setLoading(false)
+            setNewPassword({ password: "", otp: "" })
         } finally {
             setLoading(false)
         }
@@ -156,35 +156,57 @@ const Profile = () => {
             setResumeUploadLoading(true)
             let token = localStorage.getItem("token");
 
-            let result = await uploadResume(token, formData);
+            await uploadResume(token, formData);
+            triggerMessage("success", "Resume uploaded!");
 
-            triggerMessage("success", result.message || "Resume uploaded!");
-
-            // Refresh user (documents[] update)
             fetchUserProfile();
-
             setResumeFile(null)
 
         } catch (err) {
-            console.log(err)
             triggerMessage("danger", err?.response?.data?.message || "Resume upload failed!");
         } finally {
             setResumeUploadLoading(false)
         }
     };
 
-    const editor = useEditor({
-        extensions: [
-            StarterKit, // Includes basic formatting like bold, italic, headings, etc.
-            // Add other extensions as needed, e.g., Image, Table, Link
-        ],
-        content: '<p>Hello, Tiptap!</p>', // Initial content for the editor
-        onUpdate: ({ editor }) => {
-            // Handle editor content changes here
-            const html = editor.getHTML();
-            console.log(html);
-        },
-    });
+    const handleBioSave = async () => {
+        if (!editor.getText().trim()) {
+            return triggerMessage("warning", "Bio cannot be empty!");
+        }
+
+        try {
+            setBioLoading(true);
+            let token = localStorage.getItem("token");
+            let bioHTML = editor.getHTML();
+
+            let result = await uploadBIO(token, { bio: bioHTML });
+
+            triggerMessage("success", result.message || "Bio updated!");
+            fetchUserProfile();
+            setIsEditingBio(false);
+        } catch (err) {
+            triggerMessage("danger", err?.response?.data?.message || "Bio update failed!");
+        } finally {
+            setBioLoading(false);
+        }
+    };
+
+    const handleDeleteResume = async () => {
+        try {
+            setDeleteLoading(true);
+            let token = localStorage.getItem("token");
+
+            let result = await deleteResume(token);
+
+            triggerMessage("success", result.data?.message || "Resume deleted!");
+            fetchUserProfile();
+
+        } catch (err) {
+            triggerMessage("danger", err?.response?.data?.message || "Delete failed!");
+        } finally {
+            setDeleteLoading(false);
+        }
+    };
 
     return (
 
@@ -318,6 +340,53 @@ const Profile = () => {
                                     }
                                 </span>
                             </div>
+
+                            {/* BIO SECTION */}
+                            <div className='shadow flex flex-col gap-3'>
+                                <div className='flex items-center justify-between w-full'>
+                                    <div className='flex items-center gap-3'>
+                                        <span className='user-info-icon'>
+                                            <FaUser />
+                                        </span>
+                                        <span className='font-semibold'>Your Bio</span>
+                                    </div>
+
+                                    <button
+                                        onClick={() => setIsEditingBio(prev => !prev)}
+                                        className='bg-primary text-light px-3 py-1 rounded hover:bg-dark transition'
+                                    >
+                                        {isEditingBio ? "Cancel" : "Edit"}
+                                    </button>
+                                </div>
+
+                                {/* VIEW MODE */}
+                                {!isEditingBio && (
+                                    <div
+                                        className='bio-content text-sm leading-6'
+                                        dangerouslySetInnerHTML={{
+                                            __html: user?.bio || "<p>No bio added yet.</p>"
+                                        }}
+                                    />
+                                )}
+
+                                {/* EDIT MODE */}
+                                {isEditingBio && (
+                                    <div className='bio-editor'>
+                                        <EditorToolbar editor={editor} />
+                                        <EditorContent editor={editor} className='border rounded p-3 mt-2 bg-white outline-none' />
+
+                                        <button
+                                            disabled={bioLoading}
+                                            onClick={handleBioSave}
+                                            className='mt-3 bg-primary text-light px-4 py-2 rounded hover:bg-dark disabled:bg-gray-400'
+                                        >
+                                            {bioLoading ? "Saving..." : "Save Bio"}
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
+
                         </div>
                         {/* Password Reset*/}
                         <div className='p-3'>
@@ -340,7 +409,7 @@ const Profile = () => {
                                 {/* show otp field is requested */}
                                 {
                                     passwordResetRequest ?
-                                        <div className='verify-password-reset flex gap-4 flex-wrap'>
+                                        <div className='verify-password-reset flex gap-4 flex-wrap mt-5'>
                                             <span className='my-4 block grow'>Please Verify OTP at your email :
                                                 <span className='text-primary font-bold'> {user.logedIn ? user.email.userEmail : null}</span>
                                             </span>
@@ -382,77 +451,57 @@ const Profile = () => {
                             </div>
                         </div>
                     </div>
-                    <div className='reports p-3'>
-                        {/* reports */}
-                        <div className='applied-jobs rounded flex flex-col justify-center items-center gap-4 text-dark'>
-                            <span className='text-4xl'>
-                                {
-                                    user.logedIn ? user.appliedJobs.length : 0
-                                }
-                            </span>
-                            <span className='font-bold'>Applied Jobs</span>
-                        </div>
-                        <div className='profile-selected rounded flex flex-col justify-center items-center gap-4 text-dark'>
-                            <span className='text-4xl'>
-                                0
-                            </span>
-                            <span className='font-bold'>Profile Selected</span>
-                        </div>
-                    </div>
+
                     <div className='documents'>
                         <div className='documents p-4 shadow rounded mt-5'>
-                            <h3 className='font-bold text-lg mb-3'>Your Documents</h3>
+                            <h3 className='font-bold text-lg mb-3'>Your Resume | Recruiter can see this</h3>
 
                             {/* Show uploaded resumes */}
                             {
-                                user.logedIn && user.documents.length > 0 ?
-                                    <div className='uploaded-documents mb-4'>
-                                        <h4 className='font-semibold mb-2'>Uploaded Resumes:</h4>
-                                        <ul className='list-disc pl-5'>
-                                            {
-                                                user.documents.map((doc, index) => (
-                                                    <li key={index}>
-                                                        <a
-                                                            href={`${import.meta.env.VITE_BASE_API_URL}/resumes/${doc}`}
-                                                            target="_blank"
-                                                            className='text-blue-600 underline'
-                                                        >
-                                                            {doc}
-                                                        </a>
-                                                    </li>
-                                                ))
-                                            }
-                                        </ul>
+                                user?.document ? (
+                                    <div className="flex flex-col gap-3">
+                                        <a
+                                            href={`${import.meta.env.VITE_BASE_API_URL}/resumes/${user.document}`}
+                                            target="_blank"
+                                            className="text-blue-600 underline"
+                                        >
+                                            {user.document}
+                                        </a>
+
+                                        <button
+                                            disabled={deleteLoading}
+                                            onClick={handleDeleteResume}
+                                            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 disabled:bg-gray-400 w-fit"
+                                        >
+                                            {deleteLoading ? "Deleting..." : "Delete Resume"}
+                                        </button>
                                     </div>
-                                    :
-                                    <p>No resumes uploaded yet.</p>
+                                ) : (
+                                    <>
+                                        <p>No resume uploaded yet.</p>
+
+                                        {/* Upload new resume */}
+                                        <div className='mt-4'>
+                                            <label className='block font-semibold mb-2'>Upload New Resume:</label>
+
+                                            <input
+                                                type="file"
+                                                accept=".pdf,.doc,.docx"
+                                                onChange={(e) => setResumeFile(e.target.files[0])}
+                                                className='p-2 border rounded w-full'
+                                            />
+
+                                            <button
+                                                disabled={!resumeFile || resumeUploadLoading}
+                                                onClick={handleResumeUpload}
+                                                className='mt-3 bg-primary text-light px-4 py-2 rounded hover:bg-dark disabled:bg-gray-400'
+                                            >
+                                                {resumeUploadLoading ? "Uploading..." : "Upload Resume"}
+                                            </button>
+                                        </div>
+                                    </>
+                                )
                             }
-
-                            {/* Upload new resume */}
-                            <div className='mt-4'>
-                                <label className='block font-semibold mb-2'>Upload New Resume:</label>
-
-                                <input
-                                    type="file"
-                                    accept=".pdf,.doc,.docx"
-                                    onChange={(e) => setResumeFile(e.target.files[0])}
-                                    className='p-2 border rounded w-full'
-                                />
-
-                                <button
-                                    disabled={!resumeFile || resumeUploadLoading}
-                                    onClick={handleResumeUpload}
-                                    className='mt-3 bg-primary text-light px-4 py-2 rounded hover:bg-dark disabled:bg-gray-400'
-                                >
-                                    {resumeUploadLoading ? "Uploading..." : "Upload Resume"}
-                                </button>
-                            </div>
-
-                            {/* bio editor */}
-
-                            <EditorToolbar editor={editor} />
-                            <EditorContent editor={editor} />
-
                         </div>
                     </div>
                 </div>
@@ -461,9 +510,4 @@ const Profile = () => {
     )
 }
 
-
 export default Profile
-
-// edit form a sperate components 
-
-// to create sperate section for actions[profile picture/reset password/upload resume]
